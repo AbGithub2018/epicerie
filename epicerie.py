@@ -7,36 +7,36 @@ import requests
 st.set_page_config(page_title="Mon Scanner Épicerie", page_icon="🛒", layout="centered")
 
 st.title("🛒 Assistant Épicerie UPC")
-st.write("Prenez une photo bien droite, proche et nette du code-barres.")
+st.write("Cliquez sur le bouton ci-dessous pour prendre une photo nette avec l'appareil photo de votre téléphone.")
 
-image_capturee = st.camera_input("Scanner un produit")
+# Remplacement par le module de téléversement de fichier (compatible appareil photo mobile)
+image_chargee = st.file_uploader("Prendre une photo du code-barres", type=["jpg", "jpeg", "png"])
 
-if image_capturee:
-    # 1. Charger l'image prise par le cellulaire
-    bytes_data = image_capturee.getvalue()
-    image_cv = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+if image_chargee:
+    # 1. Lire le fichier téléversé
+    file_bytes = np.asarray(bytearray(image_chargee.read()), dtype=np.uint8)
+    image_cv = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     
-    # 2. Afficher la photo à l'écran pour vérification de l'utilisateur
-    st.subheader("📸 Votre photo reçue par le système :")
-    st.image(image_cv, caption="Vérifiez si les lignes du code-barres sont parfaitement nettes et lisibles ici.", use_container_width=True)
+    # 2. Afficher la photo pour validation visuelle
+    st.subheader("📸 Photo envoyée :")
+    st.image(image_cv, caption="Photo haute définition de votre produit", use_container_width=True)
     
-    # 3. Traitement de l'image (Correction du bogue de tuple OpenCV)
+    # 3. Prétraitement pour maximiser les chances de lecture
     gris = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
     _, gris_ameliore = cv2.threshold(gris, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     
-    # 4. Tentative de décodage
-    st.write("🔍 Analyse du code-barres en cours...")
-    codes_detectes = decode(gris_ameliore)
+    # 4. Décodage du code-barres
+    st.write("🔍 Analyse en cours...")
+    codes_detectes = decode(image_cv)
     if not codes_detectes:
-        codes_detectes = decode(image_cv)
-    
-    # 5. Résultat du scan
+        codes_detectes = decode(gris_ameliore)
+        
     if codes_detectes:
         for code in codes_detectes:
             code_upc = code.data.decode('utf-8')
             st.success(f"🎯 Code UPC détecté : {code_upc}")
             
-            # Appel API Open Food Facts
+            # Requête vers la base de données Open Food Facts
             url = f"https://openfoodfacts.org{code_upc}.json"
             try:
                 reponse = requests.get(url).json()
@@ -65,5 +65,5 @@ if image_capturee:
                 st.error("Erreur de connexion à la base de données.")
             break
     else:
-        st.error("❌ Aucun code-barres n'a pu être lu sur cette photo.")
-        st.info("💡 **Comment savoir si votre photo est correcte ?** Regardez l'image affichée ci-dessus. Si vous n'arrivez pas à distinguer clairement chaque petite ligne noire à l'œil nu à cause du flou, de la distance ou d'un reflet brillant, l'algorithme Python ne le pourra pas non plus.")
+        st.error("❌ Aucun code-barres n'a pu être lu.")
+        st.info("💡 **Conseil :** Assurez-vous que l'appareil photo de votre téléphone a bien fait la mise au point sur les lignes du code-barres avant de déclencher.")
