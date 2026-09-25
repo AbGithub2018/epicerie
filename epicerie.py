@@ -7,16 +7,27 @@ import requests
 st.set_page_config(page_title="Mon Scanner Épicerie", page_icon="🛒", layout="centered")
 
 st.title("🛒 Assistant Épicerie UPC")
-st.write("Prenez une photo bien nette et proche du code-barres UPC du produit.")
+st.write("Prenez une photo bien droite, proche et nette du code-barres.")
 
-# Utilisation du composant officiel de Streamlit
 image_capturee = st.camera_input("Scanner un produit")
 
 if image_capturee:
     bytes_data = image_capturee.getvalue()
     image_cv = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
     
-    codes_detectes = decode(image_cv)
+    # --- AMÉLIORATION DE L'IMAGE POUR ENÉVITER LES ÉCHECS ---
+    # 1. Conversion en niveaux de gris (noir et blanc)
+    gris = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
+    
+    # 2. Augmentation du contraste et de la netteté
+    # (Aide pyzbar à bien séparer les barres noires des espaces blancs)
+    gris_ameliore = cv2.threshold(gris, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    
+    # 3. Essayer de décoder sur l'image améliorée, sinon sur l'image originale
+    codes_detectes = decode(gris_ameliore)
+    if not codes_detectes:
+        codes_detectes = decode(image_cv)
+    # --------------------------------------------------------
     
     if codes_detectes:
         for code in codes_detectes:
@@ -49,4 +60,5 @@ if image_capturee:
                 st.warning("Produit introuvable dans la base de données Nord-Américaine.")
             break
     else:
-        st.error("❌ Aucun code-barres détecté. Assurez-vous que la photo soit bien nette et pas trop loin, puis reprenez une photo.")
+        st.error("❌ Aucun code-barres détecté.")
+        st.info("💡 **Conseil :** Approchez le téléphone pour que le code-barres prenne une bonne partie de l'écran, attendez que l'image soit bien nette (pas de flou de bougé) avant de cliquer.")
