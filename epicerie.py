@@ -31,7 +31,7 @@ if image_chargee:
             code_upc = code.data.decode('utf-8')
             st.success(f"🎯 Code UPC détecté : {code_upc}")
             
-            url = f"https://openfoodfacts.org{code_upc}.json"
+            url = f"https://openfoodfacts.org/api/v2/product/{code_upc}.json"
             
             entetes = {
                 "User-Agent": "MonScannerEpicerie - Android/iOS - Version 1.0 (contact: test@example.com)"
