@@ -31,16 +31,13 @@ if image_chargee:
             code_upc = code.data.decode('utf-8')
             st.success(f"🎯 Code UPC détecté : {code_upc}")
             
-            # --- CORRECTION DE L'ERREUR DE CONNEXION ---
-            url = f"https://world.openfoodfacts.org/api/v2/product/{code_upc}.json"
+            url = f"https://openfoodfacts.org{code_upc}.json"
             
-            # On ajoute des entêtes pour s'identifier auprès d'Open Food Facts
             entetes = {
                 "User-Agent": "MonScannerEpicerie - Android/iOS - Version 1.0 (contact: test@example.com)"
             }
             
             try:
-                # Envoi de la requête avec l'identifiant requis
                 reponse_brute = requests.get(url, headers=entetes, timeout=10)
                 
                 if reponse_brute.status_code == 200:
@@ -49,7 +46,10 @@ if image_chargee:
                     if reponse.get("status") == 1:
                         produit = reponse["product"]
                         
-                        col1, col2 = st.columns()
+                        # --- CORRECTION DE L'ERREUR DE COLONNES ---
+                        # On spécifie '2' pour indiquer qu'on veut couper l'écran en deux colonnes égales
+                        col1, col2 = st.columns(2)
+                        
                         with col1:
                             url_image = produit.get("image_front_url")
                             if url_image:
@@ -71,7 +71,6 @@ if image_chargee:
                     st.error(f"Le serveur distant a répondu avec une erreur (Code: {reponse_brute.status_code})")
                     
             except Exception as e:
-                # Affiche le détail technique exact de l'erreur pour nous aider
                 st.error(f"Erreur de connexion technique : {str(e)}")
             break
     else:
