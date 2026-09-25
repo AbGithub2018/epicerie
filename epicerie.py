@@ -29,6 +29,8 @@ if image_chargee:
     if codes_detectes:
         for code in codes_detectes:
             code_upc = code.data.decode('utf-8')
+            code_upc = code_upc.strip()
+            
             st.success(f"🎯 Code UPC détecté : {code_upc}")
             
             url = f"https://openfoodfacts.org/api/v2/product/{code_upc}.json"
@@ -40,14 +42,15 @@ if image_chargee:
             try:
                 reponse_brute = requests.get(url, headers=entetes, timeout=10)
                 
-                if reponse_brute.status_code == 200:
+                # GESTION PROPRE DE L'ERREUR 404 (PRODUIT INCONNU)
+                if reponse_brute.status_code == 404:
+                    st.warning(f"ℹ️ Le produit avec le code {code_upc} n'est pas encore enregistré dans la base de données alimentaire.")
+                elif reponse_brute.status_code == 200:
                     reponse = reponse_brute.json()
                     
                     if reponse.get("status") == 1:
                         produit = reponse["product"]
                         
-                        # --- CORRECTION DE L'ERREUR DE COLONNES ---
-                        # On spécifie '2' pour indiquer qu'on veut couper l'écran en deux colonnes égales
                         col1, col2 = st.columns(2)
                         
                         with col1:
